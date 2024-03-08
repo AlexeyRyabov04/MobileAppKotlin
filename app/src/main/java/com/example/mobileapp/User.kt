@@ -6,5 +6,5 @@ class User(
     val nick: String = "",
     val phone: String = "",
     val surname: String = "",
-    val favourites: List<Int> = listOf()
+    val favourites: MutableList<Int> = mutableListOf()
 )

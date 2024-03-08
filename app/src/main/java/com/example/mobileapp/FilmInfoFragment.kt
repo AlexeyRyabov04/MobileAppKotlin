@@ -32,7 +32,8 @@ class FilmInfoFragment : DialogFragment() {
 
     private lateinit var viewPager: ViewPager2
     private lateinit var sliderAdapter: SliderAdapter
-
+    private lateinit var user : User
+    private lateinit var userSnapshot : DataSnapshot
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -40,33 +41,46 @@ class FilmInfoFragment : DialogFragment() {
         val rootView = inflater.inflate(R.layout.fragment_film_info, container, false)
         displayInformation(rootView)
         var btn = rootView.findViewById<Button>(R.id.favouritesButton)
-        btn.setOnClickListener {
-            val database = FirebaseDatabase.getInstance()
-            val usersRef = database.getReference("users")
-            val email = FirebaseAuth.getInstance().currentUser?.email
-            usersRef.orderByChild("email").equalTo(email).addListenerForSingleValueEvent(object :
-                ValueEventListener {
-                override fun onDataChange(dataSnapshot: DataSnapshot) {
-                    if (dataSnapshot.exists()) {
-                        val userSnapshot = dataSnapshot.children.first()
-                        val user = userSnapshot.getValue(User::class.java)!!
-                        val list : MutableList<Int>
-                        list = mutableListOf()
-                        for (a in user.favourites){
-                            list.add(a)
-                        }
-                        a
-                    }
+        getUser { user ->
+            if (user != null) {
+                checkFavourites(btn)
+                btn.setOnClickListener{
+                    val id = arguments?.getInt("id")!!
+                    user.favourites.add(id)
                 }
+            } else {
 
-                override fun onCancelled(databaseError: DatabaseError) {
-                    println("Ошибка при выполнении запроса: ${databaseError.message}")
-                }
-            })
+            }
         }
         return rootView
     }
 
+    private fun getUser(completion: (User?) -> Unit){
+        val database = FirebaseDatabase.getInstance()
+        val usersRef = database.getReference("users")
+        val email = FirebaseAuth.getInstance().currentUser?.email
+        usersRef.orderByChild("email").equalTo(email).addListenerForSingleValueEvent(object :
+            ValueEventListener {
+            override fun onDataChange(dataSnapshot: DataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    userSnapshot = dataSnapshot.children.first()
+                    user = userSnapshot.getValue(User::class.java)!!
+                    completion(user)
+
+                }
+            }
+
+            override fun onCancelled(databaseError: DatabaseError) {
+                println("Ошибка при выполнении запроса: ${databaseError.message}")
+            }
+        })
+    }
+    private fun checkFavourites(btn : Button){
+        val id = arguments?.getInt("id")!!
+        if (user.favourites.contains(id)) {
+            btn.isEnabled = false
+        }
+    }
     private fun displayInformation(rootView : View){
         viewPager = rootView.findViewById<ViewPager2>(R.id.viewPager)
         sliderAdapter = SliderAdapter()
