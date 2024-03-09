@@ -17,7 +17,7 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 
-class FavouritesFragment : Fragment(), MovieAdapter.OnItemClickListener {
+class FavouritesFragment : Fragment(), MovieAdapter.OnItemClickListener  {
 
     private lateinit var reference: DatabaseReference
     private lateinit var movieList: MutableList<Movie>
@@ -34,40 +34,44 @@ class FavouritesFragment : Fragment(), MovieAdapter.OnItemClickListener {
         recyclerView = rootView.findViewById(R.id.recyclerView)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         movieList = mutableListOf()
+
+        getList()
+        return rootView
+    }
+
+    private fun getList(){
         getUser{user ->
-        if (user != null) {
-            for (movieIdToFind in user.favourites) {
-                val moviesReference = FirebaseDatabase.getInstance().getReference("movies")
+            if (user != null) {
+                for (movieIdToFind in user.favourites) {
+                    val moviesReference = FirebaseDatabase.getInstance().getReference("movies")
 
-                val query = moviesReference.orderByChild("id").equalTo(movieIdToFind.toDouble())
+                    val query = moviesReference.orderByChild("id").equalTo(movieIdToFind.toDouble())
 
-                query.addListenerForSingleValueEvent(object : ValueEventListener {
-                    override fun onDataChange(dataSnapshot: DataSnapshot) {
-                        if (dataSnapshot.exists()) {
-                            val movieSnapshot = dataSnapshot.children.first()
-                            val movie = movieSnapshot.getValue(Movie::class.java)!!
-                            movie?.let {
-                                if (!movieList.contains(it)) {
-                                    movieList.add(it)
+                    query.addListenerForSingleValueEvent(object : ValueEventListener {
+                        override fun onDataChange(dataSnapshot: DataSnapshot) {
+                            if (dataSnapshot.exists()) {
+                                val movieSnapshot = dataSnapshot.children.first()
+                                val movie = movieSnapshot.getValue(Movie::class.java)!!
+                                movie?.let {
+                                    if (!movieList.contains(it)) {
+                                        movieList.add(it)
+                                    }
                                 }
                             }
+                            adapter = MovieAdapter(movieList, this@FavouritesFragment)
+                            recyclerView.adapter = adapter
+
                         }
-                        adapter = MovieAdapter(movieList, this@FavouritesFragment)
-                        recyclerView.adapter = adapter
 
-                    }
+                        override fun onCancelled(error: DatabaseError) {
+                            println("Ошибка при получении фильма: ${error.message}")
+                        }
+                    })
+                }
 
-                    override fun onCancelled(error: DatabaseError) {
-                        println("Ошибка при получении фильма: ${error.message}")
-                    }
-                })
-            }
+            } else {
 
-        } else {
-
-        }}
-
-        return rootView
+            }}
     }
     private fun getUser(completion: (User?) -> Unit) {
         val database = FirebaseDatabase.getInstance()
@@ -91,9 +95,10 @@ class FavouritesFragment : Fragment(), MovieAdapter.OnItemClickListener {
     }
 
     override fun onItemClick(movie: Movie) {
-        val fragment = FilmInfoFragment.newInstance(movie)
+        val fragment = FilmInfoFragment.newInstance(movie, true)
         fragment.show((activity as AppCompatActivity).supportFragmentManager, "showPopUp")
     }
+
 
     companion object {
         @JvmStatic

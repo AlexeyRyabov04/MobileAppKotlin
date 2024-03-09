@@ -34,6 +34,7 @@ class FilmInfoFragment : DialogFragment() {
     private lateinit var sliderAdapter: SliderAdapter
     private lateinit var user : User
     private lateinit var userSnapshot : DataSnapshot
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -43,13 +44,20 @@ class FilmInfoFragment : DialogFragment() {
         var btn = rootView.findViewById<Button>(R.id.favouritesButton)
         getUser { user ->
             if (user != null) {
+                val id = arguments?.getInt("id")!!
                 checkFavourites(btn)
-                btn.setOnClickListener{
-                    val id = arguments?.getInt("id")!!
-                    user.favourites.add(id)
+                btn.setOnClickListener {
+                    val isInFavorites = checkFavourites(btn)
+                    if (isInFavorites){
+                        user.favourites.remove(id)
+                        btn.text = "В избранное"
+                    }
+                    else{
+                        user.favourites.add(id)
+                        btn.text = "Добавлено в избранное"
+                    }
+                    userSnapshot.ref.setValue(user)
                 }
-            } else {
-
             }
         }
         return rootView
@@ -75,13 +83,16 @@ class FilmInfoFragment : DialogFragment() {
             }
         })
     }
-    private fun checkFavourites(btn : Button){
+    private fun checkFavourites(btn : Button) : Boolean{
         val id = arguments?.getInt("id")!!
         if (user.favourites.contains(id)) {
-            btn.isEnabled = false
+            btn.text = "Добавлено в избранное"
+            return true
         }
+        return false
     }
-    private fun displayInformation(rootView : View){
+
+        private fun displayInformation(rootView : View){
         viewPager = rootView.findViewById<ViewPager2>(R.id.viewPager)
         sliderAdapter = SliderAdapter()
         viewPager.adapter = sliderAdapter
@@ -104,7 +115,14 @@ class FilmInfoFragment : DialogFragment() {
         }
             .addOnFailureListener {
             }
-
+        val bool = arguments?.getBoolean("bool")!!
+        val btn = rootView.findViewById<Button>(R.id.favouritesButton)
+        if (bool){
+            btn.text = "добавлено в избранное"
+        }
+        else{
+            btn.text = "В избранное"
+        }
 
     }
 
@@ -112,13 +130,14 @@ class FilmInfoFragment : DialogFragment() {
     companion object {
 
         @JvmStatic
-        fun newInstance(data: Movie): FilmInfoFragment {
+        fun newInstance(data: Movie, isFavourites: Boolean): FilmInfoFragment {
             val fragment = FilmInfoFragment()
             val args = Bundle()
             args.putString("title", data.title)
             args.putInt("id", data.id)
             args.putString("description", data.description)
             args.putString("producer", data.producer)
+            args.putBoolean("bool", isFavourites)
             fragment.arguments = args
             return fragment
         }

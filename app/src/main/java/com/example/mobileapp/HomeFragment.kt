@@ -56,7 +56,7 @@ class HomeFragment : Fragment(), MovieAdapter.OnItemClickListener {
     }
 
     override fun onItemClick(movie: Movie) {
-        val fragment = FilmInfoFragment.newInstance(movie)
+        val fragment = FilmInfoFragment.newInstance(movie, false)
         fragment.show((activity as AppCompatActivity).supportFragmentManager, "showPopUp")
     }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
